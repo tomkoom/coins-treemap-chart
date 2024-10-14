@@ -2,7 +2,7 @@ import { Home } from "./pages";
 
 function App() {
   return (
-    <div className="p-4">
+    <div>
       <Home />
     </div>
   );
