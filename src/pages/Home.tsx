@@ -112,7 +112,7 @@ const Home: FC = (): JSX.Element => {
       <header className="flex items-center gap-6 h-[48px] px-[10px] overflow-x-auto whitespace-nowrap">
         <div className="flex flex-col leading-tight text-sm">
           <h1>
-            Top crypto coins <br /> treemap chart
+            Top crypto coins dominance <br /> treemap chart
           </h1>
         </div>
 
