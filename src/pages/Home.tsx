@@ -1,128 +1,203 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useQuery } from "@tanstack/react-query";
-import { FC, ReactNode } from "react";
-import mockData from "./data.json";
+import { FC, useEffect, useState } from "react";
+import { ResponsiveTreeMap } from "@nivo/treemap";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { CategoricalColorSchemeId } from "./types";
+import { CryptoCoin } from "./coin";
 
-interface MessageProps {
-  children: ReactNode;
-}
+const coinsNumOptions = [
+  { value: 10 },
+  { value: 25 },
+  { value: 50 },
+  { value: 100 },
+];
 
-interface CryptoCoin {
-  id: string;
-  symbol: string;
-  name: string;
-  image: string;
-  current_price: number;
-  market_cap: number;
-  market_cap_rank: number;
-  fully_diluted_valuation: number;
-  total_volume: number;
-  high_24h: number;
-  low_24h: number;
-  price_change_24h: number;
-  price_change_percentage_24h: number;
-  market_cap_change_24h: number;
-  market_cap_change_percentage_24h: number;
-  circulating_supply: number;
-  total_supply: number;
-  max_supply: number | null;
-  ath: number;
-  ath_change_percentage: number;
-  ath_date: string;
-  atl: number;
-  atl_change_percentage: number;
-  atl_date: string;
-  roi: number | null;
-  last_updated: string;
-}
-
-const Message: FC<MessageProps> = ({ children }) => {
-  return <div className="text-center p-4">{children}</div>;
-};
-
-// api
-const coinsCoingecko =
-  "https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc";
-const globalCoingecko = "https://api.coingecko.com/api/v3/global";
-
-const fetchCoins = async (): Promise<CryptoCoin[]> => {
-  let res = await fetch(coinsCoingecko).then((res) => res.json());
-  return res;
-};
-
-const fetchGlobal = async (): Promise<any> => {
-  let res = await fetch(globalCoingecko).then((res) => res.json());
-  return res;
-};
+const themes: CategoricalColorSchemeId[] = [
+  "nivo",
+  "category10",
+  "accent",
+  "dark2",
+  "paired",
+  "pastel1",
+  "pastel2",
+  "set1",
+  "set2",
+  "set3",
+  "tableau10",
+];
 
 const Home: FC = (): JSX.Element => {
-  // const { data: coins, status: statusCoins } = useQuery({
-  //   queryKey: ["coins"],
-  //   queryFn: fetchCoins,
-  // });
-  // const { data: global, status: statusGlobal } = useQuery({
-  //   queryKey: ["global"],
-  //   queryFn: fetchGlobal,
-  // });
+  const [theme, setTheme] = useState<CategoricalColorSchemeId>("category10");
+  const [coinsNum, setCoinsNum] = useState<number>(100);
+  const [chartData, setChartData] = useState({});
+  const [marketcap, setMarketcap] = useState<number>(0);
+  // api
+  const [coins, setCoins] = useState<CryptoCoin[]>([]);
+  const [globalMarketcap, setGlobalMarketcap] = useState<number>(0);
 
-  // if (statusCoins === "loading" || statusGlobal === "loading")
-  //   return <Message>Loading...</Message>;
-  // if (statusCoins === "error" || statusGlobal === "error")
-  //   return <Message>Fetch error.</Message>;
+  const format = (v: number) => {
+    const percent = (v / marketcap) * 100;
+    return Number(percent.toFixed(2)).toString() + "%";
+  };
 
-  // const marketCap = Number(global.data?.total_market_cap?.usd).toLocaleString();
-  // const marketCapTop100 = coins
-  //   .map((coin) => Number(coin.market_cap))
-  //   .reduce((acc: number, val: number) => {
-  //     return acc + val;
-  //   }, 0)
-  //   .toLocaleString();
+  const fetchCoins = async (): Promise<void> => {
+    const url =
+      "https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc";
+    try {
+      let res = await fetch(url).then((res) => res.json());
+      if (res) {
+        setCoins(res);
+      }
+    } catch (error) {
+      console.error(error);
+      // @ts-ignore
+      console.log("Coins:", error.message);
+    }
+  };
 
-  const marketCapTop100 = mockData
-    .map((coin) => Number(coin.market_cap))
-    .reduce((acc: number, val: number) => {
-      return acc + val;
-    }, 0)
-    .toLocaleString();
+  const fetchGlobalMarketcap = async (): Promise<void> => {
+    const url = "https://api.coingecko.com/api/v3/global";
+    try {
+      let res = await fetch(url).then((res) => res.json());
+      if (res) {
+        const usdMarketcap = res.data?.total_market_cap?.usd;
+        setGlobalMarketcap(usdMarketcap);
+      }
+    } catch (error) {
+      console.error(error);
+      // @ts-ignore
+      console.log("Global marketcap:", error.message);
+    }
+  };
+
+  const fetchData = async (): Promise<void> => {
+    await fetchCoins();
+    await fetchGlobalMarketcap();
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, [coinsNum]);
+
+  useEffect(() => {
+    if (!globalMarketcap) return;
+    if (coins.length < 1) return;
+    const length = coinsNum;
+    const sliced = coins.slice(0, length);
+    const mc = sliced.reduce((acc, coin) => acc + coin.market_cap, 0);
+    const children = sliced.map((coin) => ({
+      name: coin.name,
+      children: [
+        {
+          name: coin.name,
+          value: Number(coin.market_cap),
+        },
+      ],
+    }));
+
+    setMarketcap(mc);
+    setChartData({
+      name: `Top ${coinsNum} coins`,
+      children: children,
+    });
+  }, [globalMarketcap, coins]);
 
   return (
-    <div className="p-4">
-      <Card className="w-full">
-        <CardHeader className="flex flex-col">
-          <CardTitle className="font-bold">
-            Top 100 cryptocurrencies by market cap
-          </CardTitle>
-        </CardHeader>
+    <div className="">
+      <header className="flex items-center gap-6 h-[48px] px-[10px] overflow-x-auto whitespace-nowrap">
+        <div className="flex flex-col leading-tight text-sm">
+          <h1>
+            Top crypto coins <br /> treemap chart
+          </h1>
+        </div>
 
-        <CardContent className="flex items-stretch gap-2">
-          <div className="flex flex-col flex-1 rounded bg-gray-100 p-2">
-            <span className="font-bold">Top 100 currencies market cap</span>
-            <span>${marketCapTop100}</span>
-          </div>
+        {/* themes */}
+        <div className="flex flex-col leading-tight text-sm">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button className="rounded-none" variant="outline">
+                <span className="text-gray-500">Theme:</span>&nbsp;
+                {theme}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="rounded-none">
+              {themes.map((id) => (
+                <DropdownMenuItem
+                  key={id}
+                  className="cursor-pointer hover:rounded-none"
+                  onClick={() => setTheme(id)}
+                >
+                  {id}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
 
-          {/* <div className="flex flex-col flex-1 rounded bg-gray-100 p-2">
-            <span className="font-bold">Total market cap</span>
-            <span>${marketCap}</span>
-          </div> */}
-        </CardContent>
+        {/* coins */}
+        <div className="flex flex-col leading-tight text-sm">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button className="rounded-none" variant="outline">
+                <span className="text-gray-500">Coins:</span>&nbsp;
+                {coinsNum}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="rounded-none">
+              {coinsNumOptions.map((option) => (
+                <DropdownMenuItem
+                  key={option.value}
+                  className="cursor-pointer hover:rounded-none"
+                  onClick={() => setCoinsNum(option.value)}
+                >
+                  {option.value}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
 
-        {/* list */}
-        <CardContent>
-          <ul className="flex flex-col gap-1">
-            {mockData.map((coin: any) => (
-              <li key={coin.id} className="flex items-center justify-between">
-                <div className="flex items-baseline gap-1">
-                  <span className="text-base">{coin.name}</span>
-                  <span className="text-gray-600">({coin.symbol})</span>
-                </div>
-                <div>
-                  <span>${Number(coin.market_cap).toLocaleString()}</span>
-                </div>
-              </li>
-            ))}
-          </ul>
-        </CardContent>
-      </Card>
+        <div className="flex flex-col leading-tight text-sm">
+          <span>Top {coinsNum} coins market cap:</span>
+          <span>${marketcap.toLocaleString()}</span>
+        </div>
+
+        <div className="flex flex-col leading-tight text-sm">
+          <span>Total market cap:</span>
+          <span>${globalMarketcap.toLocaleString()}</span>
+        </div>
+
+        <div className="flex flex-col leading-tight text-sm">
+          <span>CoinGecko demo API:</span>
+          <span>30 calls/min</span>
+        </div>
+      </header>
+      <hr />
+
+      {/* h = 100vh - (header + margin + hr) */}
+      <div className="flexw-full h-[calc(100vh-69px)] overflow-hidden m-[10px]">
+        <ResponsiveTreeMap
+          data={chartData}
+          identity="name"
+          value="value"
+          valueFormat={format}
+          // label
+          labelSkipSize={26}
+          labelTextColor="black"
+          // parent label
+          parentLabelSize={14}
+          parentLabelTextColor="black"
+          parentLabelPadding={4}
+          // styles
+          nodeOpacity={1}
+          colors={{ scheme: theme }}
+        />
+      </div>
     </div>
   );
 };
