@@ -40,8 +40,8 @@ const Home: FC = (): JSX.Element => {
   const [coins, setCoins] = useState<CryptoCoin[]>([]);
   const [globalMarketcap, setGlobalMarketcap] = useState<number>(0);
 
-  const format = (v: number) => {
-    const percent = (v / marketcap) * 100;
+  const format = (v: number): string => {
+    const percent = (v / globalMarketcap) * 100;
     return Number(percent.toFixed(2)).toString() + "%";
   };
 
