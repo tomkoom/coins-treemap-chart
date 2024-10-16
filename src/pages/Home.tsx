@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { CategoricalColorSchemeId } from "./types";
 import { CryptoCoin } from "./coin";
+import { TileType } from "@nivo/treemap";
 
 const coinsNumOptions = [
   { value: 10 },
@@ -31,9 +32,18 @@ const themes: CategoricalColorSchemeId[] = [
   "tableau10",
 ];
 
+const tileTypes: TileType[] = [
+  "binary",
+  "dice",
+  "slice",
+  "sliceDice",
+  "squarify",
+];
+
 const Home: FC = (): JSX.Element => {
   const [theme, setTheme] = useState<CategoricalColorSchemeId>("category10");
   const [coinsNum, setCoinsNum] = useState<number>(100);
+  const [tile, setTile] = useState<TileType>("squarify");
   const [chartData, setChartData] = useState({});
   const [marketcap, setMarketcap] = useState<number>(0);
   // api
@@ -108,13 +118,14 @@ const Home: FC = (): JSX.Element => {
   }, [globalMarketcap, coins]);
 
   return (
-    <div className="">
-      <header className="flex items-center gap-6 h-[48px] px-[10px] overflow-x-auto whitespace-nowrap">
+    <div>
+      <header className="flex items-center gap-3 h-[48px] px-[10px] overflow-x-auto whitespace-nowrap">
         <div className="flex flex-col leading-tight text-sm">
           <h1>
-            Top crypto coins dominance <br /> treemap chart
+            Top crypto coins <br /> dominance treemap
           </h1>
         </div>
+        <div className="h-[32px] w-px bg-gray-200"></div>
 
         {/* themes */}
         <div className="flex flex-col leading-tight text-sm">
@@ -138,6 +149,7 @@ const Home: FC = (): JSX.Element => {
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
+        <div className="h-[32px] w-px bg-gray-200"></div>
 
         {/* coins */}
         <div className="flex flex-col leading-tight text-sm">
@@ -161,16 +173,43 @@ const Home: FC = (): JSX.Element => {
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
+        <div className="h-[32px] w-px bg-gray-200"></div>
+
+        {/* tile */}
+        <div className="flex flex-col leading-tight text-sm">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button className="rounded-none" variant="outline">
+                <span className="text-gray-500">Tile:</span>&nbsp;
+                {tile}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="rounded-none">
+              {tileTypes.map((type) => (
+                <DropdownMenuItem
+                  key={type}
+                  className="cursor-pointer hover:rounded-none"
+                  onClick={() => setTile(type)}
+                >
+                  {type}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+        <div className="h-[32px] w-px bg-gray-200"></div>
 
         <div className="flex flex-col leading-tight text-sm">
           <span>Top {coinsNum} coins market cap:</span>
           <span>${marketcap.toLocaleString()}</span>
         </div>
+        <div className="h-[32px] w-px bg-gray-200"></div>
 
         <div className="flex flex-col leading-tight text-sm">
           <span>Total market cap:</span>
           <span>${globalMarketcap.toLocaleString()}</span>
         </div>
+        <div className="h-[32px] w-px bg-gray-200"></div>
 
         <div className="flex flex-col leading-tight text-sm">
           <span>CoinGecko demo API:</span>
@@ -186,6 +225,7 @@ const Home: FC = (): JSX.Element => {
           identity="name"
           value="value"
           valueFormat={format}
+          tile={tile}
           // label
           labelSkipSize={26}
           labelTextColor="black"
